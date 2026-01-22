@@ -1,5 +1,6 @@
 #![no_std]
-#![allow(deprecated)] // Allow deprecated events::publish for now
+#![allow(non_snake_case)]
+use soroban_sdk::{contract, contractimpl};
 
 mod storage_types;
 
