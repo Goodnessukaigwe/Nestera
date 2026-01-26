@@ -97,6 +97,14 @@ pub enum DataKey {
     Admin,
     Initialized,
     AdminPublicKey,
+    /// Global pause flag for emergency control
+    Paused,
+    /// Minimum allowed deposit amount
+    MinimumDeposit,
+    /// Fee applied on withdrawals
+    WithdrawalFee,
+    /// Protocol fee configuration
+    PlatformFee,
     User(Address),
     /// Maps a (user address, plan_id) tuple to a SavingsPlan
     SavingsPlan(Address, u64),

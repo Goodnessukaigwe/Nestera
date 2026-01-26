@@ -1800,3 +1800,336 @@ fn test_xdr_compatibility_lock_save() {
     // which is required for Soroban storage
 }
 
+// =============================================================================
+// Admin Control Tests
+// =============================================================================
+
+#[test]
+fn test_set_admin_success() {
+    let (env, client) = setup_test_env();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+    let new_admin = Address::generate(&env);
+
+    // Set initial admin
+    let result = client.try_set_admin(&admin, &new_admin);
+    assert!(result.is_ok());
+
+    // Verify new admin is set
+    let stored_admin = client.get_admin();
+    assert_eq!(stored_admin, Some(new_admin));
+}
+
+#[test]
+fn test_set_admin_unauthorized() {
+    let (env, client) = setup_test_env();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+    let fake_admin = Address::generate(&env);
+    let new_admin = Address::generate(&env);
+
+    // Set initial admin
+    client.set_admin(&admin, &new_admin);
+
+    // Try to set admin with unauthorized address
+    let result = client.try_set_admin(&fake_admin, &Address::generate(&env));
+    assert_eq!(result, Err(Ok(SavingsError::Unauthorized)));
+}
+
+#[test]
+fn test_set_platform_settings_success() {
+    let (env, client) = setup_test_env();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+
+    // Set admin first
+    client.set_admin(&admin, &admin);
+
+    // Set platform settings
+    let min_deposit = 1000i128;
+    let withdrawal_fee = 100i128; // 1%
+    let platform_fee = 50i128; // 0.5%
+
+    let result = client.try_set_platform_settings(&admin, &min_deposit, &withdrawal_fee, &platform_fee);
+    assert!(result.is_ok());
+
+    // Verify settings are stored
+    let (stored_min, stored_withdrawal, stored_platform) = client.get_platform_settings();
+    assert_eq!(stored_min, min_deposit);
+    assert_eq!(stored_withdrawal, withdrawal_fee);
+    assert_eq!(stored_platform, platform_fee);
+}
+
+#[test]
+fn test_set_platform_settings_unauthorized() {
+    let (env, client) = setup_test_env();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+    let fake_admin = Address::generate(&env);
+
+    // Set admin first
+    client.set_admin(&admin, &admin);
+
+    // Try to set settings with unauthorized address
+    let result = client.try_set_platform_settings(&fake_admin, &1000, &100, &50);
+    assert_eq!(result, Err(Ok(SavingsError::Unauthorized)));
+}
+
+#[test]
+fn test_set_platform_settings_negative_values() {
+    let (env, client) = setup_test_env();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+
+    // Set admin first
+    client.set_admin(&admin, &admin);
+
+    // Try to set negative values
+    let result = client.try_set_platform_settings(&admin, &-1000, &100, &50);
+    assert_eq!(result, Err(Ok(SavingsError::InvalidAmount)));
+}
+
+#[test]
+fn test_pause_unpause_success() {
+    let (env, client) = setup_test_env();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+
+    // Set admin first
+    client.set_admin(&admin, &admin);
+
+    // Initially not paused
+    assert!(!client.is_paused());
+
+    // Pause contract
+    let result = client.try_pause(&admin);
+    assert!(result.is_ok());
+    assert!(client.is_paused());
+
+    // Unpause contract
+    let result = client.try_unpause(&admin);
+    assert!(result.is_ok());
+    assert!(!client.is_paused());
+}
+
+#[test]
+fn test_pause_unauthorized() {
+    let (env, client) = setup_test_env();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+    let fake_admin = Address::generate(&env);
+
+    // Set admin first
+    client.set_admin(&admin, &admin);
+
+    // Try to pause with unauthorized address
+    let result = client.try_pause(&fake_admin);
+    assert_eq!(result, Err(Ok(SavingsError::Unauthorized)));
+}
+
+#[test]
+fn test_unpause_unauthorized() {
+    let (env, client) = setup_test_env();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+    let fake_admin = Address::generate(&env);
+
+    // Set admin first
+    client.set_admin(&admin, &admin);
+
+    // Pause first
+    client.pause(&admin);
+
+    // Try to unpause with unauthorized address
+    let result = client.try_unpause(&fake_admin);
+    assert_eq!(result, Err(Ok(SavingsError::Unauthorized)));
+}
+
+#[test]
+fn test_operations_blocked_when_paused() {
+    let (env, client) = setup_test_env();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+    let user = Address::generate(&env);
+
+    // Set admin and pause
+    client.set_admin(&admin, &admin);
+    
+    // Initialize user first
+    client.initialize_user(&user);
+    
+    // Pause the contract
+    client.pause(&admin);
+
+    // Try to create lock save while paused
+    let result = client.try_create_lock_save(&user, &1000, &86400u64);
+    // Result is Err(Result<Error>) wrapping ContractPaused
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_withdrawal_blocked_when_paused() {
+    let (env, client) = setup_test_env();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+    let user = Address::generate(&env);
+
+    // Set admin
+    client.set_admin(&admin, &admin);
+    
+    // Initialize user
+    client.initialize_user(&user);
+
+    // Create a lock save
+    let lock_id = client.create_lock_save(&user, &1000, &100u64);
+
+    // Fast forward time past maturity
+    set_ledger_timestamp(&env, 200);
+
+    // Pause the contract
+    client.pause(&admin);
+
+    // Try to withdraw while paused
+    let result = client.try_withdraw_lock_save(&user, &lock_id);
+    // Result is Err(Result<Error>) wrapping ContractPaused
+    assert!(result.is_err());
+
+    // Unpause and verify withdrawal works
+    client.unpause(&admin);
+    let amount = client.withdraw_lock_save(&user, &lock_id);
+    assert!(amount > 0);
+}
+
+#[test]
+fn test_emergency_withdraw_success() {
+    let (env, client) = setup_test_env();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+
+    // Set admin first
+    client.set_admin(&admin, &admin);
+
+    // Perform emergency withdrawal
+    let amount = 5000i128;
+    let result = client.try_emergency_withdraw(&admin, &amount);
+    assert!(result.is_ok());
+}
+
+#[test]
+fn test_emergency_withdraw_unauthorized() {
+    let (env, client) = setup_test_env();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+    let fake_admin = Address::generate(&env);
+
+    // Set admin first
+    client.set_admin(&admin, &admin);
+
+    // Try emergency withdrawal with unauthorized address
+    let result = client.try_emergency_withdraw(&fake_admin, &5000);
+    assert_eq!(result, Err(Ok(SavingsError::Unauthorized)));
+}
+
+#[test]
+fn test_emergency_withdraw_invalid_amount() {
+    let (env, client) = setup_test_env();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+
+    // Set admin first
+    client.set_admin(&admin, &admin);
+
+    // Try with zero amount
+    let result = client.try_emergency_withdraw(&admin, &0);
+    assert_eq!(result, Err(Ok(SavingsError::InvalidAmount)));
+
+    // Try with negative amount
+    let result = client.try_emergency_withdraw(&admin, &-1000);
+    assert_eq!(result, Err(Ok(SavingsError::InvalidAmount)));
+}
+
+#[test]
+fn test_get_platform_settings_defaults() {
+    let (_env, client) = setup_test_env();
+
+    // Get settings without setting them first (should return defaults)
+    let (min_deposit, withdrawal_fee, platform_fee) = client.get_platform_settings();
+    assert_eq!(min_deposit, 0);
+    assert_eq!(withdrawal_fee, 0);
+    assert_eq!(platform_fee, 0);
+}
+
+#[test]
+fn test_admin_can_update_settings_multiple_times() {
+    let (env, client) = setup_test_env();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+
+    // Set admin first
+    client.set_admin(&admin, &admin);
+
+    // Set initial settings
+    client.set_platform_settings(&admin, &1000, &100, &50);
+    let (min1, _wd1, _pf1) = client.get_platform_settings();
+    assert_eq!(min1, 1000);
+
+    // Update settings
+    client.set_platform_settings(&admin, &2000, &200, &75);
+    let (min2, wd2, pf2) = client.get_platform_settings();
+    assert_eq!(min2, 2000);
+    assert_eq!(wd2, 200);
+    assert_eq!(pf2, 75);
+}
+
+#[test]
+fn test_pause_state_persists() {
+    let (env, client) = setup_test_env();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+
+    // Set admin and pause
+    client.set_admin(&admin, &admin);
+    client.pause(&admin);
+
+    // Verify pause state persists across checks
+    assert!(client.is_paused());
+    assert!(client.is_paused());
+    assert!(client.is_paused());
+}
+
+#[test]
+fn test_admin_transfer() {
+    let (env, client) = setup_test_env();
+    env.mock_all_auths();
+
+    let admin1 = Address::generate(&env);
+    let admin2 = Address::generate(&env);
+    let admin3 = Address::generate(&env);
+
+    // Set initial admin
+    client.set_admin(&admin1, &admin2);
+    assert_eq!(client.get_admin(), Some(admin2.clone()));
+
+    // Admin2 transfers to admin3
+    client.set_admin(&admin2, &admin3);
+    assert_eq!(client.get_admin(), Some(admin3.clone()));
+
+    // Admin1 can no longer set admin
+    let result = client.try_set_admin(&admin1, &admin1);
+    assert_eq!(result, Err(Ok(SavingsError::Unauthorized)));
+}
