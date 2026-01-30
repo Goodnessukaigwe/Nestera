@@ -187,4 +187,3 @@ fn add_schedule_to_user(env: &Env, user: &Address, schedule_id: u64) {
     schedules.push_back(schedule_id);
     env.storage().persistent().set(&key, &schedules);
 }
-

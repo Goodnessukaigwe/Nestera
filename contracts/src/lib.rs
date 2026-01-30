@@ -5,8 +5,8 @@ use soroban_sdk::{
     Env, String, Symbol, Vec,
 };
 
-mod errors;
 mod autosave;
+mod errors;
 mod flexi;
 mod goal;
 mod group;

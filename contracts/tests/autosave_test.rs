@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod autosave_tests {
-    use Nestera::{NesteraContract, NesteraContractClient};
     use soroban_sdk::{testutils::Address as _, Address, Env};
+    use Nestera::{NesteraContract, NesteraContractClient};
 
     fn setup_test_contract() -> (Env, NesteraContractClient<'static>, Address) {
         let env = Env::default();
@@ -11,7 +11,7 @@ mod autosave_tests {
         let client = NesteraContractClient::new(&env, &contract_id);
 
         let user = Address::generate(&env);
-        
+
         // Initialize user
         client.initialize_user(&user);
 
@@ -133,7 +133,7 @@ mod autosave_tests {
 
         let other_user = Address::generate(&env);
         client.initialize_user(&other_user);
-        
+
         // Try to cancel someone else's schedule
         let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
             client.cancel_autosave(&other_user, &schedule_id);
