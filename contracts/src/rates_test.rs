@@ -1,5 +1,5 @@
-use soroban_sdk::{testutils::Address as _, Address, BytesN, Env};
 use crate::{NesteraContract, NesteraContractClient, SavingsError};
+use soroban_sdk::{testutils::Address as _, Address, BytesN, Env};
 
 fn setup() -> (Env, NesteraContractClient<'static>, Address) {
     let env = Env::default();
@@ -17,7 +17,7 @@ fn setup() -> (Env, NesteraContractClient<'static>, Address) {
 #[test]
 fn test_default_rates_are_zero() {
     let (env, client, _admin) = setup();
-    
+
     // Default rates should be 0
     assert_eq!(client.get_flexi_rate(), 0);
     assert_eq!(client.get_goal_rate(), 0);
@@ -32,7 +32,7 @@ fn test_default_rates_are_zero() {
 #[test]
 fn test_admin_can_set_rates() {
     let (env, client, admin) = setup();
-    
+
     env.mock_all_auths();
 
     // Set Flexi Rate to 500 (5%)
@@ -61,15 +61,15 @@ fn test_admin_can_set_rates() {
 fn test_non_admin_cannot_set_rates() {
     let (env, client, _admin) = setup();
     let user = Address::generate(&env);
-    
+
     // Clear the "mock all" from setup so we can test failures
     env.mock_auths(&[]);
 
-    // We only mock the user's auth (implied if we were doing user actions), 
+    // We only mock the user's auth (implied if we were doing user actions),
     // but here we want to assert that even if we call it, it fails because ADMIN auth is missing.
-    // Since we cleared mock_all_auths, and we don't mock admin auth, 
+    // Since we cleared mock_all_auths, and we don't mock admin auth,
     // `admin.require_auth()` inside the contract should fail.
-    
+
     // Try set flexi rate
     let res = client.try_set_flexi_rate(&500);
     assert!(res.is_err());
@@ -92,7 +92,7 @@ fn test_calculate_flexi_interest_logic() {
     let balance = 1_000_000; // 1M
     let rate = 500; // 5%
     let duration = 365 * 24 * 60 * 60; // 1 year
-    
+
     let interest = crate::rates::calculate_flexi_interest(balance, rate, duration);
     // 1M * 5% = 50,000
     // Logic: (1M * 500 * duration) / (10000 * duration) = 50,000
@@ -106,8 +106,8 @@ fn test_calculate_flexi_interest_logic() {
 #[test]
 fn test_calculate_lock_interest_logic() {
     let amount = 1_000_000;
-    let rate = 500; // 5% flat return? 
-    
+    let rate = 500; // 5% flat return?
+
     let interest = crate::rates::calculate_lock_interest(amount, rate);
     assert_eq!(interest, 50_000);
 }

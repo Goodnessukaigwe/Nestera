@@ -14,8 +14,8 @@ mod lock;
 mod storage_types;
 mod users;
 
-mod views;
 mod rates;
+mod views;
 
 pub use crate::errors::SavingsError;
 pub use crate::storage_types::{
@@ -318,19 +318,19 @@ impl NesteraContract {
     }
 
     pub fn set_goal_rate(env: Env, rate: i128) -> Result<(), SavingsError> {
-         let admin: Address = env.storage().instance().get(&DataKey::Admin).unwrap();
+        let admin: Address = env.storage().instance().get(&DataKey::Admin).unwrap();
         admin.require_auth();
         rates::set_goal_rate(&env, rate)
     }
 
     pub fn set_group_rate(env: Env, rate: i128) -> Result<(), SavingsError> {
-         let admin: Address = env.storage().instance().get(&DataKey::Admin).unwrap();
+        let admin: Address = env.storage().instance().get(&DataKey::Admin).unwrap();
         admin.require_auth();
         rates::set_group_rate(&env, rate)
     }
 
     pub fn set_lock_rate(env: Env, duration_days: u64, rate: i128) -> Result<(), SavingsError> {
-         let admin: Address = env.storage().instance().get(&DataKey::Admin).unwrap();
+        let admin: Address = env.storage().instance().get(&DataKey::Admin).unwrap();
         admin.require_auth();
         rates::set_lock_rate(&env, duration_days, rate)
     }
@@ -430,7 +430,7 @@ impl NesteraContract {
 #[cfg(test)]
 mod admin_tests;
 #[cfg(test)]
+mod rates_test;
+#[cfg(test)]
 #[cfg(test)]
 mod test;
-#[cfg(test)]
-mod rates_test;
