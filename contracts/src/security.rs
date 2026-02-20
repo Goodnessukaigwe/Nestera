@@ -1,5 +1,5 @@
-use soroban_sdk::{testutils::Address as _, Address, Env, Symbol, Vec, String};
-use crate::{NesteraContract, NesteraContractClient, SavingsError, PlanType};
+use crate::{NesteraContract, NesteraContractClient, PlanType, SavingsError};
+use soroban_sdk::{testutils::Address as _, Address, Env, String, Symbol, Vec};
 
 #[cfg(test)]
 mod security_tests {
@@ -10,7 +10,7 @@ mod security_tests {
     fn test_overflow_protection() {
         let env = Env::default();
         // Setup Nestera contract...
-        
+
         // 1. Try to deposit i128::MAX + 1
         // 2. Assert that the result is Err(SavingsError::Overflow)
     }

@@ -1,12 +1,12 @@
-use soroban_sdk::{testutils::Address as _, Address, BytesN, Env, Error, InvokeError, Symbol};
 use crate::{NesteraContract, NesteraContractClient, SavingsError};
+use soroban_sdk::{testutils::Address as _, Address, BytesN, Env, Error, InvokeError, Symbol};
 
 fn setup() -> (Env, NesteraContractClient<'static>, Address) {
     let env = Env::default();
     let contract_id = env.register(NesteraContract, ());
     let client = NesteraContractClient::new(&env, &contract_id);
     let admin = Address::generate(&env);
-    
+
     // Fixed: Standard 32-byte array for admin public key simulation
     let admin_pk = BytesN::from_array(&env, &[1u8; 32]);
 
@@ -23,7 +23,10 @@ fn assert_panic_error(err: Result<Error, InvokeError>, expected: SavingsError) {
 }
 
 /// Helper for functions that DO return Result<T, SavingsError> in the contract
-fn assert_savings_error(err: Result<Result<u64, soroban_sdk::Val>, Result<SavingsError, InvokeError>>, expected: SavingsError) {
+fn assert_savings_error(
+    err: Result<Result<u64, soroban_sdk::Val>, Result<SavingsError, InvokeError>>,
+    expected: SavingsError,
+) {
     match err {
         Err(Ok(actual_error)) => assert_eq!(actual_error, expected),
         _ => panic!("Expected SavingsError: {:?}, but got {:?}", expected, err),
@@ -39,7 +42,7 @@ fn non_admin_cannot_pause_or_unpause() {
     let non_admin = Address::generate(&env);
 
     env.mock_all_auths();
-    
+
     // try_pause returns Result<Result<(), ...>, Result<SavingsError, ...>>
     match client.try_pause(&non_admin) {
         Err(Ok(e)) => assert_eq!(e, SavingsError::Unauthorized),
@@ -72,7 +75,7 @@ fn paused_blocks_write_paths() {
         Err(Ok(e)) => assert_eq!(e, SavingsError::ContractPaused),
         _ => panic!("Expected ContractPaused"),
     }
-    
+
     // Repeat the match pattern for other calls...
 }
 
