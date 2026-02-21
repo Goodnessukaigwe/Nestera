@@ -156,7 +156,11 @@ pub fn award_deposit_points(env: &Env, user: Address, amount: i128) -> Result<()
     save_user_rewards(env, user.clone(), &user_rewards);
 
     env.events().publish(
-        (symbol_short!("rewards"), symbol_short!("awarded"), user),
+        (
+            symbol_short!("rewards"),
+            symbol_short!("awarded"),
+            user.clone(),
+        ),
         total_points_awarded,
     );
 
