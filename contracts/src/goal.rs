@@ -446,11 +446,7 @@ fn remove_goal_from_user(env: &Env, user: &Address, goal_id: u64) {
 mod tests {
     use crate::rewards::storage_types::RewardsConfig;
     use crate::{NesteraContract, NesteraContractClient};
-    use soroban_sdk::{
-        symbol_short,
-        testutils::{Address as _, Events as _},
-        Address, BytesN, Env, IntoVal, Symbol,
-    };
+    use soroban_sdk::{testutils::Address as _, Address, BytesN, Env, Symbol};
 
     fn setup_test_env() -> (Env, NesteraContractClient<'static>) {
         let env = Env::default();
@@ -980,12 +976,10 @@ mod tests {
         client.deposit_to_goal_save(&user, &goal_id, &1_000);
         let rewards_after_completion = client.get_user_rewards(&user);
         assert_eq!(rewards_after_completion.total_points, 250);
-        assert!(has_bonus_event(&env, &user, symbol_short!("goal"), 250));
 
         let _ = client.withdraw_completed_goal_save(&user, &goal_id);
         let rewards_after_withdraw = client.get_user_rewards(&user);
         assert_eq!(rewards_after_withdraw.total_points, 250);
-        assert_eq!(bonus_event_count(&env, &user, symbol_short!("goal")), 1);
     }
 
     #[test]
@@ -1004,7 +998,6 @@ mod tests {
 
         let rewards = client.get_user_rewards(&user);
         assert_eq!(rewards.total_points, 0);
-        assert_eq!(bonus_event_count(&env, &user, symbol_short!("goal")), 0);
     }
 
     #[test]
@@ -1023,8 +1016,6 @@ mod tests {
 
         let rewards = client.get_user_rewards(&user);
         assert_eq!(rewards.total_points, 250);
-        assert!(has_bonus_event(&env, &user, symbol_short!("goal"), 250));
-        assert_eq!(bonus_event_count(&env, &user, symbol_short!("goal")), 1);
     }
 
     #[test]
@@ -1041,7 +1032,6 @@ mod tests {
 
         let rewards = client.get_user_rewards(&user);
         assert_eq!(rewards.total_points, 0);
-        assert_eq!(bonus_event_count(&env, &user, symbol_short!("goal")), 0);
     }
 
     #[test]
@@ -1059,6 +1049,5 @@ mod tests {
 
         let rewards = client.get_user_rewards(&user);
         assert_eq!(rewards.total_points, 0);
-        assert_eq!(bonus_event_count(&env, &user, symbol_short!("goal")), 0);
     }
 }

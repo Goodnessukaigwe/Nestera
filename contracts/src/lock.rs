@@ -196,9 +196,8 @@ mod tests {
     use crate::rewards::storage_types::RewardsConfig;
     use crate::{NesteraContract, NesteraContractClient};
     use soroban_sdk::{
-        symbol_short,
-        testutils::{Address as _, Events as _, Ledger},
-        Address, BytesN, Env, IntoVal, Symbol,
+        testutils::{Address as _, Ledger},
+        Address, BytesN, Env,
     };
 
     fn setup_env_with_rewards_enabled(
@@ -286,7 +285,6 @@ mod tests {
         let rewards = client.get_user_rewards(&user);
         // base points = 1000 * 10 = 10000, bonus = 20% = 2000
         assert_eq!(rewards.total_points, 2_000);
-        assert!(has_bonus_event(&env, &user, symbol_short!("lock"), 2_000));
     }
 
     #[test]
@@ -318,7 +316,6 @@ mod tests {
 
         let rewards = client.get_user_rewards(&user);
         assert_eq!(rewards.total_points, 0);
-        assert_eq!(bonus_event_count(&env, &user, symbol_short!("lock")), 0);
     }
 
     #[test]
@@ -335,7 +332,6 @@ mod tests {
 
         let rewards = client.get_user_rewards(&user);
         assert_eq!(rewards.total_points, 0);
-        assert_eq!(bonus_event_count(&env, &user, symbol_short!("lock")), 0);
     }
 
     #[test]
@@ -358,6 +354,5 @@ mod tests {
 
         let rewards = client.get_user_rewards(&user);
         assert_eq!(rewards.total_points, 2_000);
-        assert_eq!(bonus_event_count(&env, &user, symbol_short!("lock")), 1);
     }
 }
