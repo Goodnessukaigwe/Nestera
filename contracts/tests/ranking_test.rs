@@ -1,9 +1,6 @@
 #![cfg(test)]
+use soroban_sdk::{testutils::Address as _, Address, BytesN, Env, Vec};
 use Nestera::{NesteraContract, NesteraContractClient};
-use soroban_sdk::{
-    testutils::Address as _,
-    Address, BytesN, Env, Vec,
-};
 
 fn create_test_env() -> (Env, NesteraContractClient<'static>, Address, Vec<Address>) {
     let env = Env::default();
@@ -29,16 +26,15 @@ fn create_test_env() -> (Env, NesteraContractClient<'static>, Address, Vec<Addre
 
 fn setup_rewards_config(client: &NesteraContractClient, admin: &Address) {
     client.init_rewards_config(
-        admin,
-        &10,      // points_per_token
-        &0,       // streak_bonus_bps
-        &0,       // long_lock_bonus_bps
-        &0,       // goal_completion_bonus
-        &true,    // enabled
-        &100,     // min_deposit_for_rewards
-        &0,       // action_cooldown_seconds (disabled for testing)
+        admin, &10,        // points_per_token
+        &0,         // streak_bonus_bps
+        &0,         // long_lock_bonus_bps
+        &0,         // goal_completion_bonus
+        &true,      // enabled
+        &100,       // min_deposit_for_rewards
+        &0,         // action_cooldown_seconds (disabled for testing)
         &1_000_000, // max_daily_points (high limit)
-        &10_000,  // max_streak_multiplier
+        &10_000,    // max_streak_multiplier
     );
 }
 
@@ -48,7 +44,11 @@ fn test_get_top_users_empty() {
     setup_rewards_config(&client, &admin);
 
     let top_users = client.get_top_users(&5);
-    assert_eq!(top_users.len(), 0, "Should return empty list with no points");
+    assert_eq!(
+        top_users.len(),
+        0,
+        "Should return empty list with no points"
+    );
 }
 
 #[test]
@@ -58,7 +58,7 @@ fn test_get_top_users_basic() {
 
     // Give different amounts to users
     client.deposit_flexi(&users.get(0).unwrap().clone(), &1000); // 10,000 points
-    client.deposit_flexi(&users.get(1).unwrap().clone(), &500);  // 5,000 points
+    client.deposit_flexi(&users.get(1).unwrap().clone(), &500); // 5,000 points
     client.deposit_flexi(&users.get(2).unwrap().clone(), &2000); // 20,000 points
     client.deposit_flexi(&users.get(3).unwrap().clone(), &1500); // 15,000 points
 
@@ -121,7 +121,7 @@ fn test_get_user_rank_basic() {
 
     // Give different amounts
     client.deposit_flexi(&users.get(0).unwrap().clone(), &1000); // 10,000 points - rank 3
-    client.deposit_flexi(&users.get(1).unwrap().clone(), &500);  // 5,000 points  - rank 4
+    client.deposit_flexi(&users.get(1).unwrap().clone(), &500); // 5,000 points  - rank 4
     client.deposit_flexi(&users.get(2).unwrap().clone(), &2000); // 20,000 points - rank 1
     client.deposit_flexi(&users.get(3).unwrap().clone(), &1500); // 15,000 points - rank 2
 
@@ -151,7 +151,7 @@ fn test_get_user_ranking_details() {
 
     let details0 = client.get_user_ranking_details(&users.get(0).unwrap().clone());
     assert!(details0.is_some(), "User with points should have details");
-    
+
     let (rank, points, total) = details0.unwrap();
     assert_eq!(rank, 2, "Should be rank 2");
     assert_eq!(points, 10_000, "Should have 10,000 points");
@@ -195,7 +195,7 @@ fn test_ranking_updates_on_new_deposits() {
 
     // Initial deposits
     client.deposit_flexi(&users.get(0).unwrap().clone(), &1000); // 10,000 points
-    client.deposit_flexi(&users.get(1).unwrap().clone(), &500);  // 5,000 points
+    client.deposit_flexi(&users.get(1).unwrap().clone(), &500); // 5,000 points
 
     let rank0_before = client.get_user_rank(&users.get(0).unwrap().clone());
     let rank1_before = client.get_user_rank(&users.get(1).unwrap().clone());
